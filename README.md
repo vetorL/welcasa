@@ -39,7 +39,7 @@ pip install fastapi uvicorn pydantic
 #### Executar o servidor
 
 ```bash
-python app.py
+python backend/app.py
 ```
 
 > O backend iniciará em:
@@ -77,13 +77,12 @@ Certifique-se de que o **backend** está rodando na porta `8000`.
 
 ## 🧭 Endpoints do Backend
 
-| Método   | Rota               | Descrição                           |
-| -------- | ------------------ | ----------------------------------- |
-| `GET`    | `/`                | Verificação simples de saúde da API |
-| `GET`    | `/properties`      | Lista todos os imóveis              |
-| `POST`   | `/properties`      | Cria um novo imóvel                 |
-| `PUT`    | `/properties/{id}` | Atualiza um imóvel existente        |
-| `DELETE` | `/properties/{id}` | Remove um imóvel                    |
+| Método   | Rota               | Descrição                    |
+| -------- | ------------------ | ---------------------------- |
+| `GET`    | `/properties`      | Lista todos os imóveis       |
+| `POST`   | `/properties`      | Cria um novo imóvel          |
+| `PUT`    | `/properties/{id}` | Atualiza um imóvel existente |
+| `DELETE` | `/properties/{id}` | Remove um imóvel             |
 
 **Exemplo de criação:**
 
@@ -93,38 +92,76 @@ curl -X POST http://127.0.0.1:8000/properties \
   -d '{"title":"Apartamento 101","address":"Rua das Flores, 123","status":"active"}'
 ```
 
-## 🧱 Funcionalidades do Frontend
+---
 
-- 📋 Listagem de imóveis com busca e ordenação
-- ➕ Adicionar, ✏️ editar e 🗑️ remover imóveis
-- 🟢 Indicador de status (ativo/inativo)
+## 🐳 4. Rodar com Docker (modo completo – frontend + backend juntos)
 
-## 🧰 Tecnologias Utilizadas
+A aplicação pode ser executada em um **único container**, com o frontend já compilado e servido pelo FastAPI.
 
-**Backend:**
+### 🧱 Build da imagem
 
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [Uvicorn](https://www.uvicorn.org/)
-- [SQLite](https://www.sqlite.org/)
-- [Pydantic](https://docs.pydantic.dev/)
+Na raiz do projeto (onde está o `Dockerfile`):
 
-**Frontend:**
+```bash
+podman build -t welhome .
+# ou
+docker build -t welhome .
+```
 
-- [React](https://react.dev/)
-- [Vite](https://vitejs.dev/)
-- [npm](https://www.npmjs.com/)
+### ▶️ Rodar o container
 
-## ✅ Estrutura do Projeto
+```bash
+podman run --rm -p 8000:8000 welhome
+# ou
+docker run --rm -p 8000:8000 welhome
+```
+
+### 🌐 Acessar
+
+Abra no navegador:
+**[http://localhost:8000](http://localhost:8000)**
+
+- Frontend e API estão no mesmo endereço.
+- `/properties` → endpoints da API
+- `/` → interface web React (SPA)
+
+---
+
+## 🧱 Estrutura do Projeto
 
 ```
 .
 ├── backend/
 │   ├── app.py
 │   └── properties.db
-└── frontend/
-    ├── package.json
-    └── src/
+├── frontend/
+│   ├── package.json
+│   └── src/
+└── Dockerfile
 ```
+
+---
+
+## 🧰 Tecnologias Utilizadas
+
+**Backend**
+
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Uvicorn](https://www.uvicorn.org/)
+- [SQLite](https://www.sqlite.org/)
+- [Pydantic](https://docs.pydantic.dev/)
+
+**Frontend**
+
+- [React](https://react.dev/)
+- [Vite](https://vitejs.dev/)
+- [npm](https://www.npmjs.com/)
+
+**Infraestrutura**
+
+- [Docker / Podman](https://www.docker.com/)
+
+---
 
 ## 🧩 Autor
 

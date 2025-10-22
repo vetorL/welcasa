@@ -4,16 +4,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import sqlite3
 import os
+from fastapi.staticfiles import StaticFiles
 
 # ------------- Configuração básica -------------
-DB_PATH = os.getenv("DB_PATH", "properties.db")
+DB_PATH = os.getenv("DATABASE_PATH", "properties.db")
 
-app = FastAPI(title="Welcasa Properties API", version="0.1.0")
+app = FastAPI(title="welhome Properties API", version="0.1.0")
 
-# Liberar o frontend (ajuste origins se quiser restringir)
+# Liberar o frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # troque por ["http://localhost:5173"] etc., se quiser
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,10 +62,6 @@ def row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
     return {"id": row["id"], "title": row["title"], "address": row["address"], "status": row["status"]}
 
 # ------------- Endpoints mínimos -------------
-@app.get("/", tags=["health"])
-def health():
-    return {"ok": True}
-
 @app.get("/properties", response_model=List[PropertyOut], tags=["properties"])
 def list_properties():
     conn = connect_db()
@@ -122,6 +119,9 @@ def delete_property(id: int = Path(..., ge=1)):
         return  # 204 No Content
     finally:
         conn.close()
+
+# Serve the built frontend (copied to ./static inside the image)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 # ------------- Execução local -------------
 if __name__ == "__main__":
