@@ -1,19 +1,20 @@
-# 🏠 Welcasa Properties API
+# 🏠 welhome – Sistema de Gestão de Imóveis
 
-Backend minimalista em **FastAPI** com **SQLite local**, responsável por gerenciar propriedades (imóveis).
+Aplicação **fullstack** simples para gerenciar propriedades (imóveis) da welhome.
+Desenvolvida com **FastAPI** (backend) e **React** (frontend).
 
-Implementa o CRUD básico de propriedades com os campos `id`, `title`, `address` e `status`.
+## 🚀 Como Rodar o Projeto
 
-## 🚀 Como rodar o projeto
-
-### 1. Clonar o repositório
+### 🧩 1. Clonar o repositório
 
 ```bash
 git clone <URL_DO_REPO>
 cd <PASTA_DO_REPO>
 ```
 
-### 2. Criar e ativar ambiente virtual
+### ⚙️ 2. Rodar o Backend (FastAPI + SQLite)
+
+#### Criar e ativar ambiente virtual
 
 **Linux/macOS**
 
@@ -29,74 +30,26 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-### 3. Instalar dependências
+#### Instalar dependências
 
 ```bash
 pip install fastapi uvicorn pydantic
 ```
 
-### 4. Executar o servidor
+#### Executar o servidor
 
 ```bash
 python app.py
 ```
 
-> O servidor será iniciado em:
+> O backend iniciará em:
 > 📍 `http://127.0.0.1:8000`
 
-## 🧭 Endpoints disponíveis
+#### Banco de dados
 
-### `GET /`
+Um banco **SQLite local (`properties.db`)** é criado automaticamente ao rodar o servidor.
 
-Verificação simples de saúde da API.
-
-```json
-{ "ok": true }
-```
-
-### `GET /properties`
-
-Lista todas as propriedades cadastradas.
-
-### `POST /properties`
-
-Cria uma nova propriedade.
-**Exemplo de corpo:**
-
-```json
-{
-  "title": "Apartamento 101",
-  "address": "Rua das Flores, 123",
-  "status": "active"
-}
-```
-
-### `PUT /properties/{id}`
-
-Atualiza os dados de uma propriedade existente.
-**Exemplo de corpo:**
-
-```json
-{
-  "title": "Apartamento 101B",
-  "address": "Rua das Flores, 123",
-  "status": "inactive"
-}
-```
-
-### `DELETE /properties/{id}`
-
-Remove a propriedade com o `id` informado.
-
-## 🗃️ Banco de dados
-
-O banco é criado automaticamente ao iniciar o servidor:
-
-```
-properties.db
-```
-
-Tabela criada:
+Tabela utilizada:
 
 ```sql
 CREATE TABLE IF NOT EXISTS properties (
@@ -107,39 +60,73 @@ CREATE TABLE IF NOT EXISTS properties (
 );
 ```
 
-## 🧪 Testes rápidos com `curl`
+### 💻 3. Rodar o Frontend (React)
 
-Criar:
+Em outro terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+> O frontend estará disponível em:
+> 🌐 `http://localhost:8080`
+
+Certifique-se de que o **backend** está rodando na porta `8000`.
+
+## 🧭 Endpoints do Backend
+
+| Método   | Rota               | Descrição                           |
+| -------- | ------------------ | ----------------------------------- |
+| `GET`    | `/`                | Verificação simples de saúde da API |
+| `GET`    | `/properties`      | Lista todos os imóveis              |
+| `POST`   | `/properties`      | Cria um novo imóvel                 |
+| `PUT`    | `/properties/{id}` | Atualiza um imóvel existente        |
+| `DELETE` | `/properties/{id}` | Remove um imóvel                    |
+
+**Exemplo de criação:**
 
 ```bash
 curl -X POST http://127.0.0.1:8000/properties \
   -H "Content-Type: application/json" \
-  -d '{"title":"Apto 101","address":"Rua XPTO, 123","status":"active"}'
+  -d '{"title":"Apartamento 101","address":"Rua das Flores, 123","status":"active"}'
 ```
 
-Listar:
+## 🧱 Funcionalidades do Frontend
 
-```bash
-curl http://127.0.0.1:8000/properties
-```
+- 📋 Listagem de imóveis com busca e ordenação
+- ➕ Adicionar, ✏️ editar e 🗑️ remover imóveis
+- 🟢 Indicador de status (ativo/inativo)
 
-Atualizar:
+## 🧰 Tecnologias Utilizadas
 
-```bash
-curl -X PUT http://127.0.0.1:8000/properties/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Apto 101B","address":"Rua XPTO, 123","status":"inactive"}'
-```
-
-Remover:
-
-```bash
-curl -X DELETE http://127.0.0.1:8000/properties/1
-```
-
-## 🧰 Tecnologias utilizadas
+**Backend:**
 
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [Uvicorn](https://www.uvicorn.org/)
 - [SQLite](https://www.sqlite.org/)
 - [Pydantic](https://docs.pydantic.dev/)
+
+**Frontend:**
+
+- [React](https://react.dev/)
+- [Vite](https://vitejs.dev/)
+- [npm](https://www.npmjs.com/)
+
+## ✅ Estrutura do Projeto
+
+```
+.
+├── backend/
+│   ├── app.py
+│   └── properties.db
+└── frontend/
+    ├── package.json
+    └── src/
+```
+
+## 🧩 Autor
+
+Desenvolvido para o **Case Técnico Simplificado – Lista de Imóveis (welhome)**.
+CRUD completo, simples e funcional, conforme especificado no desafio técnico.
