@@ -1,5 +1,7 @@
 # 🏠 welhome – Sistema de Gestão de Imóveis
 
+🌐 Deploy: https://welhome-case.vercel.app/
+
 Aplicação **fullstack** simples para gerenciar imóveis, com **FastAPI** (backend) e **React + Vite** (frontend).
 
 ## 🚀 Como Rodar
