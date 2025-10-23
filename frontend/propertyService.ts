@@ -1,6 +1,6 @@
 import { Property } from "@/components/PropertyTable";
 
-const API_BASE_URL = "https://welhome-case-backend.vercel.app";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const propertyService = {
   async getAll(): Promise<Property[]> {
