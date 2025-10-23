@@ -16,12 +16,21 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("Missing env var DATABASE_URL. Set your Neon connection string (with sslmode=require).")
 
-# Cria o pool, mas só abre durante o lifespan (evita threads órfãs em reload/exit)
+# Enforce sslmode=require in the URL (idempotent no-op if it’s already there)
+if "sslmode=" not in DATABASE_URL:
+    joiner = "&" if "?" in DATABASE_URL else "?"
+    DATABASE_URL = f"{DATABASE_URL}{joiner}sslmode=require"
+
+# ------------- DB pool (serverless-friendly) -------------
+# Key settings for Vercel/Neon:
+# - min_size=0: no connections kept warm between invocations
+# - max_size=1: Neon free/low tiers hate fan-out from parallel lambdas
+# - open=False: don't pre-open pool at import/startup
 pool = ConnectionPool(
     DATABASE_URL,
-    max_size=4,                      # Vercel/serverless: mantenha baixo
-    kwargs={"sslmode": "require"},
-    open=False                       # não abrir imediatamente; abriremos no startup
+    min_size=0,
+    max_size=1,
+    open=False,
 )
 
 # ------------- Modelos -------------
@@ -37,6 +46,7 @@ class PropertyOut(PropertyIn):
 
 # ------------- DB bootstrap -------------
 def init_db() -> None:
+    # Lazily create a single connection via the pool when needed
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -54,14 +64,20 @@ def init_db() -> None:
 # ------------- Lifespan -------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup
-    pool.open()        # inicia threads do pool aqui
-    init_db()
+    # DO NOT call pool.open() here; keep it lazy per-invocation
+    # Initialize schema on first cold start (will open exactly one conn)
+    try:
+        init_db()
+    except Exception as e:
+        # Optional: print for Vercel logs
+        print("DB init failed:", repr(e))
+        # Don't crash health checks — continue; endpoints will still raise properly
     try:
         yield
     finally:
-        # shutdown
-        pool.close()               # inicia fechamento
+        # No explicit close here — serverless instances are short-lived.
+        # Pool will clean up when the process ends. (We keep atexit as a safety net.)
+        pass
 
 # ------------- App -------------
 app = FastAPI(
