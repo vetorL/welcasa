@@ -10,6 +10,7 @@ import atexit
 # --- Postgres (Neon) ---
 from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
+from psycopg_pool import PoolClosed
 
 # ------------- Config -------------
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -22,16 +23,25 @@ if "sslmode=" not in DATABASE_URL:
     DATABASE_URL = f"{DATABASE_URL}{joiner}sslmode=require"
 
 # ------------- DB pool (serverless-friendly) -------------
-# Key settings for Vercel/Neon:
-# - min_size=0: no connections kept warm between invocations
-# - max_size=1: Neon free/low tiers hate fan-out from parallel lambdas
-# - open=False: don't pre-open pool at import/startup
+# - min_size=0: no idle connections
+# - max_size=1: avoid fan-out in serverless
+# - open=False: don't pre-open
 pool = ConnectionPool(
     DATABASE_URL,
     min_size=0,
     max_size=1,
     open=False,
 )
+
+def get_conn():
+    """
+    Open the pool on demand.
+    """
+    try:
+        return pool.connection()
+    except PoolClosed:
+        pool.open()
+        return pool.connection()
 
 # ------------- Modelos -------------
 Status = Literal["active", "inactive"]
@@ -46,8 +56,8 @@ class PropertyOut(PropertyIn):
 
 # ------------- DB bootstrap -------------
 def init_db() -> None:
-    # Lazily create a single connection via the pool when needed
-    with pool.connection() as conn:
+    # Open pool lazily and create schema if needed
+    with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -64,26 +74,22 @@ def init_db() -> None:
 # ------------- Lifespan -------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # DO NOT call pool.open() here; keep it lazy per-invocation
-    # Initialize schema on first cold start (will open exactly one conn)
+    # Initialize schema on first cold start
     try:
         init_db()
     except Exception as e:
-        # Optional: print for Vercel logs
         print("DB init failed:", repr(e))
-        # Don't crash health checks — continue; endpoints will still raise properly
     try:
         yield
     finally:
-        # No explicit close here — serverless instances are short-lived.
-        # Pool will clean up when the process ends. (We keep atexit as a safety net.)
+        # Let process shutdown handle cleanup; keep atexit safety below.
         pass
 
 # ------------- App -------------
 app = FastAPI(
     title="welhome Properties API",
-    version="0.2.1",
-    lifespan=lifespan,   # <-- IMPORTANTE: registra o lifespan!
+    version="0.2.2",
+    lifespan=lifespan,
 )
 
 # CORS liberado para o frontend
@@ -102,7 +108,7 @@ def health():
 
 @app.get("/properties", response_model=List[PropertyOut], tags=["properties"])
 def list_properties():
-    with pool.connection() as conn:
+    with get_conn() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("SELECT id, title, address, status FROM properties ORDER BY id DESC;")
             rows: List[Dict[str, Any]] = cur.fetchall()
@@ -110,7 +116,7 @@ def list_properties():
 
 @app.post("/properties", response_model=PropertyOut, status_code=201, tags=["properties"])
 def create_property(payload: PropertyIn):
-    with pool.connection() as conn:
+    with get_conn() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
@@ -129,7 +135,7 @@ def update_property(
     payload: PropertyIn,
     id: int = Path(..., ge=1),
 ):
-    with pool.connection() as conn:
+    with get_conn() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("SELECT id FROM properties WHERE id = %s;", (id,))
             if cur.fetchone() is None:
@@ -150,7 +156,7 @@ def update_property(
 
 @app.delete("/properties/{id}", status_code=204, tags=["properties"])
 def delete_property(id: int = Path(..., ge=1)):
-    with pool.connection() as conn:
+    with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM properties WHERE id = %s;", (id,))
             if cur.rowcount == 0:
@@ -159,7 +165,7 @@ def delete_property(id: int = Path(..., ge=1)):
             conn.commit()
             return  # 204 No Content
 
-# ------------- Fallback para encerramento abrupto (ex.: Ctrl+C, reload, testes) -------------
+# ------------- Fallback para encerramento abrupto -------------
 def _close_pool_on_exit():
     try:
         pool.close()
@@ -171,5 +177,4 @@ atexit.register(_close_pool_on_exit)
 # ------------- Execução local -------------
 if __name__ == "__main__":
     import uvicorn
-    # Em dev com --reload, o servidor cria subprocessos; o lifespan acima cuida do ciclo de vida.
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
