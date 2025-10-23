@@ -1,6 +1,6 @@
 # app.py  (ou api/index.py no Vercel)
 from typing import Literal, List, Dict, Any
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from fastapi import FastAPI, HTTPException, Path
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -33,15 +33,20 @@ pool = ConnectionPool(
     open=False,
 )
 
+@contextmanager
 def get_conn():
     """
-    Open the pool on demand.
+    Context manager that opens the pool on demand and yields a DB connection.
+    Handles cold starts where the pool isn't open yet.
     """
     try:
-        return pool.connection()
+        with pool.connection() as conn:
+            yield conn
     except PoolClosed:
+        # Pool isn't open in this fresh process; open it and retry once.
         pool.open()
-        return pool.connection()
+        with pool.connection() as conn:
+            yield conn
 
 # ------------- Modelos -------------
 Status = Literal["active", "inactive"]
