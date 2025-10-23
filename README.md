@@ -1,68 +1,51 @@
 # 🏠 welhome – Sistema de Gestão de Imóveis
 
-Aplicação **fullstack** simples para gerenciar propriedades (imóveis) da welhome.
-Desenvolvida com **FastAPI** (backend) e **React** (frontend).
+Aplicação **fullstack** simples para gerenciar imóveis, com **FastAPI** (backend) e **React + Vite** (frontend).
 
-## 🚀 Como Rodar o Projeto
+## 🚀 Como Rodar
 
-### 🧩 1. Clonar o repositório
+### 1️⃣ Clonar o repositório
 
 ```bash
 git clone <URL_DO_REPO>
 cd <PASTA_DO_REPO>
 ```
 
-### ⚙️ 2. Rodar o Backend (FastAPI + SQLite)
-
-#### Criar e ativar ambiente virtual
-
-**Linux/macOS**
+### 2️⃣ Backend (FastAPI + PostgreSQL)
 
 ```bash
+cd backend
 python -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-**Windows (PowerShell)**
+Suba o banco Postgres local com Podman (ou Docker):
 
 ```bash
-python -m venv .venv
-.venv\Scripts\Activate.ps1
+podman run -d --name welhome-pg \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=welhome \
+  -p 5432:5432 \
+  -v welhome-pgdata:/var/lib/postgresql/data \
+  docker.io/postgres:16
 ```
 
-#### Instalar dependências
+Configure a variável de ambiente:
 
 ```bash
-pip install fastapi uvicorn pydantic
+export DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/welhome?sslmode=disable"
 ```
 
-#### Executar o servidor
+Execute o servidor:
 
 ```bash
-python backend/app.py
+python app.py
 ```
 
-> O backend iniciará em:
-> 📍 `http://127.0.0.1:8000`
+➡️ **Backend:** [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-#### Banco de dados
-
-Um banco **SQLite local (`properties.db`)** é criado automaticamente ao rodar o servidor.
-
-Tabela utilizada:
-
-```sql
-CREATE TABLE IF NOT EXISTS properties (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    address TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('active','inactive'))
-);
-```
-
-### 💻 3. Rodar o Frontend (React)
-
-Em outro terminal:
+### 3️⃣ Frontend (React + Vite)
 
 ```bash
 cd frontend
@@ -70,21 +53,19 @@ npm install
 npm run dev
 ```
 
-> O frontend estará disponível em:
-> 🌐 `http://localhost:8080`
+➡️ **Frontend:** [http://localhost:8080](http://localhost:8080)
+Certifique-se de que o backend está ativo na porta `8000`.
 
-Certifique-se de que o **backend** está rodando na porta `8000`.
+## 🧭 Endpoints Principais
 
-## 🧭 Endpoints do Backend
+| Método | Rota               | Descrição        |
+| ------ | ------------------ | ---------------- |
+| GET    | `/properties`      | Lista imóveis    |
+| POST   | `/properties`      | Cria novo imóvel |
+| PUT    | `/properties/{id}` | Atualiza imóvel  |
+| DELETE | `/properties/{id}` | Remove imóvel    |
 
-| Método   | Rota               | Descrição                    |
-| -------- | ------------------ | ---------------------------- |
-| `GET`    | `/properties`      | Lista todos os imóveis       |
-| `POST`   | `/properties`      | Cria um novo imóvel          |
-| `PUT`    | `/properties/{id}` | Atualiza um imóvel existente |
-| `DELETE` | `/properties/{id}` | Remove um imóvel             |
-
-**Exemplo de criação:**
+Exemplo:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/properties \
@@ -92,78 +73,20 @@ curl -X POST http://127.0.0.1:8000/properties \
   -d '{"title":"Apartamento 101","address":"Rua das Flores, 123","status":"active"}'
 ```
 
----
-
-## 🐳 4. Rodar com Docker (modo completo – frontend + backend juntos)
-
-A aplicação pode ser executada em um **único container**, com o frontend já compilado e servido pelo FastAPI.
-
-### 🧱 Build da imagem
-
-Na raiz do projeto (onde está o `Dockerfile`):
-
-```bash
-podman build -t welhome .
-# ou
-docker build -t welhome .
-```
-
-### ▶️ Rodar o container
-
-```bash
-podman run --rm -p 8000:8000 welhome
-# ou
-docker run --rm -p 8000:8000 welhome
-```
-
-### 🌐 Acessar
-
-Abra no navegador:
-**[http://localhost:8000](http://localhost:8000)**
-
-- Frontend e API estão no mesmo endereço.
-- `/properties` → endpoints da API
-- `/` → interface web React (SPA)
-
----
-
-## 🧱 Estrutura do Projeto
+## 🧱 Estrutura
 
 ```
 .
 ├── backend/
 │   ├── app.py
-│   └── properties.db
+│   └── requirements.txt
 ├── frontend/
 │   ├── package.json
 │   └── src/
-└── Dockerfile
 ```
 
----
+## 🧰 Tecnologias
 
-## 🧰 Tecnologias Utilizadas
-
-**Backend**
-
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [Uvicorn](https://www.uvicorn.org/)
-- [SQLite](https://www.sqlite.org/)
-- [Pydantic](https://docs.pydantic.dev/)
-
-**Frontend**
-
-- [React](https://react.dev/)
-- [Vite](https://vitejs.dev/)
-- [npm](https://www.npmjs.com/)
-
-**Infraestrutura**
-
-- [Docker / Podman](https://www.docker.com/)
-
----
-
-## 🧩 Autor
-
-Desenvolvido para o **Case Técnico Simplificado – Lista de Imóveis (welhome)**.
-CRUD completo, simples e funcional, conforme especificado no desafio técnico.
+- **Backend:** FastAPI, PostgreSQL, Pydantic
+- **Frontend:** React, Vite
+- **Infra:** Podman / Docker
